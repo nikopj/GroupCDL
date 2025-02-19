@@ -1,0 +1,7 @@
+closure:
+  closure_type: SyntheticAWGN 
+  baseclo_type: SupervisedDenoise 
+  noise_level: [25, 25]
+  noisy_target: false
+  maxval: 255
+  loss_type: mse 

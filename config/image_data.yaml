@@ -1,0 +1,13 @@
+data:
+  data_type: natural_image
+  # trainpaths: [dataset/CBSD432, dataset/CBSD432, dataset/CBSD432, dataset/CBSD432]
+  # trainpaths: [dataset/CBSD432, dataset/WaterlooED, dataset/DIV2K, dataset/Flickr2K/Flickr2K_HR]
+  trainpaths: [dataset/CBSD432, dataset/WaterlooED, dataset/DIV2K]
+  valpaths: [dataset/CBSD68,]
+  testpaths: [dataset/urban100,]
+  cropsize: 128
+  batchsize: 2
+  grayscale: true
+  parallel: false
+  buffer: false
+  online: true

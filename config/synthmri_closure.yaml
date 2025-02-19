@@ -1,0 +1,16 @@
+closure:
+  closure_type: SyntheticMRIReco
+  fixed_rng: false
+  rng_seed: 111
+
+  baseclo_type: SupervisedMRIReco
+  loss_type: mag_ssim
+
+  noise_level: [0.001, 0.001]
+  noise_jitter: 0.00
+  max_corr: 0.00
+  readout_dir: h
+  accel: 4
+  center_frac: 0.08
+  mask_type: random
+  uniform_offset: 1

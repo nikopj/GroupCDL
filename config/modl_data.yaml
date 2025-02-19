@@ -1,0 +1,11 @@
+data:
+  data_type: modlbrain
+  fn: "dataset/MODL_BRAIN.h5"
+  split: 1.0
+  cropsize: 224
+  batchsize: 8
+  parallel: false
+  buffer: false
+  online: false
+  transpose: true
+  ongpu: true

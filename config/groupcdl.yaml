@@ -1,0 +1,28 @@
+network:
+  network_type: cdlnet
+
+  K: 30
+  M: 169
+  C: 1
+  p: 7
+  s: 2
+  d: 1
+  τ0: 1.0e-3
+
+  is_complex: false
+  preproc_type: image # image, kspace, coil
+  resize_noise: false # resize noisemap in preprocessing
+
+  MoG: 0               # Mixture of Gabor (0 means not Gabor)
+
+  windowsize: 15       # equivalent to CDLNet when windowsize==1
+  similarity: distance
+  Mh: 64
+  ΔK: 5
+  γ0: 0.8
+
+share:
+  αβ: true # share across layers (note Walpha =/= Wbeta always)
+  θϕ: true # share across layers (note Wtheta =/= Wphi always)
+  γ: true  # share across layers
+  ρ: false # share across layers

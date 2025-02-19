@@ -1,0 +1,13 @@
+network:
+  network_type: cdlnet
+  K: 30
+  M: 169
+  C: 1
+  p: 7
+  s: 2
+  d: 1
+  τ0: 1.0e-2
+  MoG: 0                # Mixture of Gabor (0 means not Gabor)
+  is_complex: false
+  preproc_type: image   # image, kspace
+  resize_noise: false   # resize noisemap in preprocessing

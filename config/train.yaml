@@ -1,0 +1,39 @@
+train:
+  Δval: 50
+  verbose: true
+  num_log_imgs: 4
+  end_epoch: 3000
+  backtrack_factor: 500
+  num_accum_grad: 1
+
+  projection_kws:
+    proj_type: ~
+    step: 1
+  
+  train_epoch_kws:
+    clipnorm: 0.05
+    maxit_epoch: 100
+    debug: false
+
+  val_epoch_kws:
+    maxit_epoch: .inf
+
+  test_epoch_kws:
+    maxit_epoch: .inf
+
+  windowsize_sched_kws:
+    ws_start: 5
+    ws_end: 5
+    epochs_start: 1
+    epochs_end: 3000
+
+  sched_kws:
+    sched_type: "cos"
+    lr_start: 5.0e-4
+    lr_end: 1.0e-6
+    epochs_start: 100 # num epochs to keep at lr_start
+    epochs_cos: 2000  # length of cosine anneal
+    epochs_end: 3000  # num epochs to keep at lr_end
+    lr_warmup: 5.0e-5
+    warmup: 0
+
