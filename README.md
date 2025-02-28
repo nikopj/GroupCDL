@@ -6,6 +6,9 @@ Transactions on Computational Imaging 2025 [(preprint
 available)](https://arxiv.org/abs/2407.18967), which makes use of
 [CirculantAttention.jl](https://github.com/nikopj/CirculantAttention.jl).
 
+![the GroupCDL architecture](media/groupcdl_arch.png)
+![Circulant Attention](media/circatt.png)
+
 This repo additionally implements,
 - [*CDLNet: Noise-Adaptive Convolutional Dictionary Learning Network for Blind Denoising and Demosaicing*](https://ieeexplore.ieee.org/document/9769957/), in IEEE OJSP 2022, [(code)](https://github.com/nikopj/CDLNet-OJSP).
 - [*Gabor is Enough: Interpretable Deep Denoising with a Gabor Synthesis Dictionary Prior*](https://ieeexplore.ieee.org/document/9816313), in IEEE IVMSP 2022, [(preprint available)](https://arxiv.org/abs/2204.11146), [(code)](https://github.com/nikopj/CDLNet-OJSP).
@@ -79,7 +82,7 @@ If you find this code/work useful, please cite us:
 @ARTICLE{janjusevicGroupCDL2025,
   author={Janjušević, Nikola and Khalilian-Gourtani, Amirhossein and Flinker, Adeen and Feng, Li and Wang, Yao},
   journal={IEEE Transactions on Computational Imaging}, 
-  title={GroupCDL: Interpretable Denoising and Compressed Sensing MRI via Learned Group-Sparsity and Circulant Attention}, 
+  title={{GroupCDL}: Interpretable Denoising and Compressed Sensing MRI via Learned Group-Sparsity and Circulant Attention}, 
   year={2025},
   volume={11},
   number={},
