@@ -1,17 +1,17 @@
 # GroupCDL
 Code for the paper, [*GroupCDL: Interpretable Denoising and Compressed Sensing
 MRI via Learned Group-Sparsity and Circulant
-Attention,*](https://ieeexplore.ieee.org/document/10874214) in IEEE
-Transactions on Computational Imaging [(preprint
+Attention*](https://ieeexplore.ieee.org/document/10874214), in IEEE
+Transactions on Computational Imaging 2025 [(preprint
 available)](https://arxiv.org/abs/2407.18967), which makes use of
 [CirculantAttention.jl](https://github.com/nikopj/CirculantAttention.jl).
 
 This repo additionally implements,
-- [*CDLNet: Noise-Adaptive Convolutional Dictionary Learning Network for Blind Denoising and Demosaicing*](https://ieeexplore.ieee.org/document/9769957/) [(code)](https://github.com/nikopj/CDLNet-OJSP).
-- [*Gabor is Enough: Interpretable Deep Denoising with a Gabor Synthesis Dictionary Prior*](https://ieeexplore.ieee.org/document/9816313) [(preprint available)](https://arxiv.org/abs/2204.11146), [(code)](https://github.com/nikopj/CDLNet-OJSP).
+- [*CDLNet: Noise-Adaptive Convolutional Dictionary Learning Network for Blind Denoising and Demosaicing*](https://ieeexplore.ieee.org/document/9769957/), in IEEE OJSP 2022, [(code)](https://github.com/nikopj/CDLNet-OJSP).
+- [*Gabor is Enough: Interpretable Deep Denoising with a Gabor Synthesis Dictionary Prior*](https://ieeexplore.ieee.org/document/9816313), in IEEE IVMSP 2022, [(preprint available)](https://arxiv.org/abs/2204.11146), [(code)](https://github.com/nikopj/CDLNet-OJSP).
 
 <details>
-<summary><h1>Install</h1></summary>
+<summary><h2>Install</h2><hr/></summary>
 This repo uses Julia 1.10.
 
 1. If you're on an HPC, set your julia depot path to somewhere you can install files, e.g. scratch.
@@ -40,7 +40,7 @@ julia --project -t auto -e "import MPI; MPI.install_mpiexecjl()"
 </details>
 
 ## Usage
-The following asssumes you have a Julia REPL for the project open, e.g. `julia +1.10 --project`.
+The following asssumes you have a Julia REPL for the project open, e.g. `julia +1.10 --project`. All network and training details are given through a config file. Example config files can be seen in `trained_nets`. Config files are stitched together from `config` automatically in the first training example below. 
 
 ### Train your own model
 Edit the configuration files in `configs/` to choose a network architecture, training, logging, and dataset details.
@@ -65,6 +65,7 @@ Optionally, you can provide alternate config files for the data and closure, ex.
 ```julia
 julia> net, ps, st, ot = main(; config="path/to/pretained_model/config.yaml", eval=true, eval_closure_config="config/synthawgn_closure.yaml", eval_data_config="config/image_data.yaml", verbose=true)
 ```
+Note that the path to the checkpoint is specified in the config file.
 
 ## Extra
 See `media/sliding_window.mp4` for an animation of how the block-circulant with circulant blocks sparsity pattern
