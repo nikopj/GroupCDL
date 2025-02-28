@@ -1,0 +1,88 @@
+log:
+  ckpt: "/gpfs/scratch/npj226/Dunja/trained_nets/CDL-group-A2030-3_1997/net.bson"
+  pretrain_config: ~
+  logdir: "/gpfs/scratch/npj226/Dunja/trained_nets/CDL-group-A2030-3_1997"
+network:
+  network_type: "cdlnet"
+  p: 7
+  resize_noise: false
+  use_position: false
+  γ0: 0.8
+  K: 30
+  τ0: 0.001
+  ρ_degrees: 2
+  M: 169
+  d: 1
+  s: 2
+  preproc_type: "image"
+  windowsize: 35
+  Mh: 64
+  similarity: "distance"
+  nheads: 1
+  γ_degrees: 0
+  ΔK: 5
+  is_complex: false
+  MoG: 0
+  C: 1
+train:
+  Δval: 50
+  end_epoch: 6000
+  windowsize_sched_kws:
+    epochs_end: 1000
+    ws_start: 35
+    ws_end: 35
+    epochs_start: 1
+  verbose: true
+  projection_kws:
+    proj_type: ~
+    step: 1
+  num_log_imgs: 4
+  val_epoch_kws:
+    maxit_epoch: 100
+  train_epoch_kws:
+    debug: false
+    clipnorm: 0.05
+    maxit_epoch: 100
+  test_epoch_kws:
+    maxit_epoch: .inf
+  sched_kws:
+    epochs_cos: 5000
+    lr_end: 2.0e-6
+    epochs_end: 6000
+    lr_warmup: 5.0e-5
+    lr_start: 0.0005
+    sched_type: "cos"
+    epochs_start: 100
+    warmup: 0
+  backtrack_factor: 100
+share:
+  γ: true
+  θϕ: true
+  ρ: false
+  αβ: true
+closure:
+  closure_type: "SyntheticAWGN"
+  noise_level:
+    - 20
+    - 30
+  loss_type: "mse"
+  noisy_target: false
+  maxval: 255
+  baseclo_type: "SupervisedDenoise"
+data:
+  batchsize: 12
+  valpaths:
+    - "dataset/CBSD68"
+  cropsize: 128
+  data_type: "natural_image"
+  trainpaths:
+    - "dataset/CBSD432"
+    - "dataset/CBSD432"
+    - "dataset/CBSD432"
+    - "dataset/CBSD432"
+  testpaths:
+    - "dataset/CBSD68"
+  grayscale: true
+  online: false
+  parallel: false
+  buffer: false

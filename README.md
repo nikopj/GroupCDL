@@ -1,9 +1,14 @@
 # GroupCDL
-Code for the paper *GroupCDL: Interpretable Denoising and Compressed Sensing
-MRI Via Learned Group-Sparsity and Circulant Attention*, in IEEE Transactions
-on Computational Imaging February 2025, doi: 10.1109/TCI.2025.3539021. 
+Code for the paper,
+N. Janjušević, A. Khalilian-Gourtani, A. Flinker, Li Feng, and Y. Wang,
+["GroupCDL: Interpretable Denoising and Compressed Sensing MRI via Learned
+Group-Sparsity and Circulant Attention," in IEEE Transactions on Computational
+Imaging, vol. 11, pp. 201-212, 2025, doi:
+10.1109/TCI.2025.3539021.](https://ieeexplore.ieee.org/document/10874214). Makes use of [CirculantAttention.jl](https://github.com/nikopj/CirculantAttention.jl).
 
 ## Install
+This repo uses julia 1.10.
+
 1. If you're on an HPC, set your julia depot path to somewhere you can install files, e.g. scratch.
 Throw this in your `.bashrc` and source it
 ```bash
@@ -29,7 +34,7 @@ julia --project -t auto -e "import MPI; MPI.install_mpiexecjl()"
 ```
 
 ## Usage
-The following asssumes you have a Julia REPL for the project.
+The following asssumes you have a Julia REPL for the project open.
 
 ### Train your own model
 Edit the configuration files in `configs/` to choose a network architecture, training, logging, and dataset details.
@@ -60,11 +65,11 @@ julia> net, ps, st, ot = main(; config="path/to/pretained_model/config.yaml", ev
 @ARTICLE{janjusevicGroupCDL2025,
   author={Janjušević, Nikola and Khalilian-Gourtani, Amirhossein and Flinker, Adeen and Feng, Li and Wang, Yao},
   journal={IEEE Transactions on Computational Imaging}, 
-  title={GroupCDL: Interpretable Denoising and Compressed Sensing MRI Via Learned Group-Sparsity and Circulant Attention}, 
+  title={GroupCDL: Interpretable Denoising and Compressed Sensing MRI via Learned Group-Sparsity and Circulant Attention}, 
   year={2025},
-  volume={},
+  volume={11},
   number={},
-  pages={1-13},
+  pages={201-212},
   doi={10.1109/TCI.2025.3539021}
 }
 ```
