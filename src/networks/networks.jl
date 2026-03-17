@@ -9,11 +9,11 @@ function select_network(; network_type="cdlnet", kws...)
     end
 end
 
-struct DummyNetwork <: LuxCore.AbstractExplicitLayer end
+struct DummyNetwork <: LuxCore.AbstractLuxLayer end
 (net::DummyNetwork)(x::AbstractArray, ps, st) = (x, st)
 (net::DummyNetwork)((y, H)::Tuple{<:AbstractArray, <:AbstractOperator}, ps, st) = (H'(y), st)
 
-struct CDLNet{L, D, P<:AbstractPreprocess} <: LuxCore.AbstractExplicitContainerLayer{(:lista, :dict)}
+struct CDLNet{L, D, P<:AbstractPreprocess} <: LuxCore.AbstractLuxContainerLayer{(:lista, :dict)}
     lista::L
     dict::D
     in_chs::Integer

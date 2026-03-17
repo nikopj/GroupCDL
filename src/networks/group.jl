@@ -1,4 +1,4 @@
-struct NonLocalSimilarity{ρinv, S, W, P} <: Lux.AbstractExplicitContainerLayer{(:Wθ, :Wϕ, :ρ)}
+struct NonLocalSimilarity{ρinv, S, W, P} <: Lux.AbstractLuxContainerLayer{(:Wθ, :Wϕ, :ρ)}
     simfun::S
     nheads::Int
     Wθ::W
@@ -82,7 +82,7 @@ function (l::NonLocalSimilarity{false})((x, y, σ)::Tuple{T,T,Ts}, ps, st::Named
 end
 (l::NonLocalSimilarity)((x, σ)::Tuple{Tx,Ts}, ps, st::NamedTuple) where {Tx, Ts} = l((x,x,σ), ps, st)
 
-struct GroupThreshold{P1, P2, Wa, Wb, S} <: Lux.AbstractExplicitContainerLayer{(:τ, :γ, :Wα, :Wβ, :nlss)}
+struct GroupThreshold{P1, P2, Wa, Wb, S} <: Lux.AbstractLuxContainerLayer{(:τ, :γ, :Wα, :Wβ, :nlss)}
     τ::P1
     γ::P2
     Wα::Wa
@@ -191,7 +191,7 @@ const GroupLISTALayer{C, Ct} = LISTALayer{C, Ct, <:GroupThreshold}
 const GroupLISTA{K} = LISTA{K, <:GroupLISTALayer}
 
 function (l::GroupLISTA{K})(x::Tuple{T, <: AbstractOperator}, ps, st::NamedTuple) where {K, T}
-    st = Zygote.@ignore Lux.update_state(st, :Γ, missing)
+    st = Lux.update_state(st, :Γ, missing)
     z, st = l.layer(x, ps[1], st)
     for k in 2:K
         z, st = l.layer((z, x), ps[k], st)

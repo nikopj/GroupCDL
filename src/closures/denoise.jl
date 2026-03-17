@@ -1,5 +1,5 @@
 #==============================================================================
-                       ABSTRACT DENOISE CLOSURE
+                      ABSTRACT DENOISE CLOSURE
 ==============================================================================#
 
 abstract type AbstractDenoiseClosure <: AbstractClosure end
@@ -11,7 +11,6 @@ function (clo::AbstractDenoiseClosure)(::Val{true}, sample::NoisyImage, net, ps,
     x̂, st = net((y, A), ps, st)
 
     mv   = maxval(sample)
-    # x̂ = clamp.(x̂, 0f0, mv)
 
     ref  = reference(sample)
     mse  = mean(abs2, ref - x̂)
@@ -32,8 +31,8 @@ function (clo::AbstractDenoiseClosure)(::Val{true}, sample::NoisyImage, net, ps,
 end
 
 metric_keys(::AbstractDenoiseClosure) = (:psnr, :ssim, :mse, :maxval)
-function init_metrics(closure::AbstractDenoiseClosure, N) 
-    Dict(:name=>Vector{String}(undef, N), 
+function init_metrics(closure::AbstractDenoiseClosure, N)
+    Dict(:name=>Vector{String}(undef, N),
          :psnr=>Vector{Float32}(undef, N),
          :mse=>Vector{Float32}(undef, N),
          :maxval=>Vector{Float32}(undef, N),
@@ -42,7 +41,7 @@ end
 
 function log_outputs(::AbstractDenoiseClosure, logger, outputs; logname=x->"val_image/$(basename(outputs[:name]))")
     imgs = clamp.(cat(outputs[:reference], outputs[:input], outputs[:output], 2outputs[:residual]; dims=4), 0, 1)
-    mos = cat([mosaicview(imgs[:,:,i,:]; nrow=2, rowmajor=true, npad=10) for i=1:size(imgs, 3)]...; dims=3) 
+    mos = cat([mosaicview(imgs[:,:,i,:]; nrow=2, rowmajor=true, npad=10) for i=1:size(imgs, 3)]...; dims=3)
     log_image(logger, logname(outputs), mos, HWC)
 end
 
@@ -62,23 +61,13 @@ function Base.show(io::IO, clo::SupervisedDenoise)
     print(io, "SupervisedDenoise($(clo.loss))")
 end
 
-function (clo::SupervisedDenoise)(::Val{false}, sample::NoisyImage, net, ps, st)
+# Lux.Training-compatible loss function: (model, ps, st, data) -> (loss, st, extras)
+function (clo::SupervisedDenoise)(net, ps, st, sample::NoisyImage)
     x = target(sample)
     y = input(sample)
     A = AWGN(noise_level(sample))
-
-    lossval, grads = Zygote.withgradient(ps) do Θ
-        x̂, st = net((y, A), Θ, st)
-        clo.loss(x, x̂)
-    end
-
-    # (lossval, st), back = Zygote.pullback(ps) do Θ
-    #     x̂, st = net((y, A), Θ, st)
-    #     clo.loss(x, x̂), st
-    # end
-    # grads = back((one(lossval), nothing))[1] 
-
-    return lossval, grads[1], st
+    x̂, st = net((y, A), ps, st)
+    return clo.loss(x, x̂), st, (;)
 end
 
 #==============================================================================
@@ -97,28 +86,35 @@ metric_keys(clo::AbstractSyntheticClosure) = metric_keys(clo.baseclo)
 init_metrics(clo::AbstractSyntheticClosure, N) = init_metrics(clo.baseclo, N)
 log_outputs(clo::AbstractSyntheticClosure, logger, outputs) = log_outputs(clo.baseclo, logger, outputs)
 
-function (synclo::AbstractSyntheticClosure)(v::Val, sample, args...)
+# Eval path: generate synthetic sample then delegate to baseclo
+function (synclo::AbstractSyntheticClosure)(v::Val{true}, sample, args...)
     syn_sample = genobs(synclo, v, sample)
     synclo.baseclo(v, syn_sample, args...)
+end
+
+# Lux.Training-compatible training path: generate synthetic sample then delegate
+function (synclo::AbstractSyntheticClosure)(net, ps, st, sample)
+    syn_sample = genobs(synclo, Val(false), sample)
+    synclo.baseclo(net, ps, st, syn_sample)
 end
 
 struct SyntheticAWGN <: AbstractSyntheticClosure
     baseclo::AbstractClosure
     noise_level::Union{Tuple, Vector}
     noisy_target::Bool
-    function SyntheticAWGN(; 
-            noise_level = (25, 25), 
+    function SyntheticAWGN(;
+            noise_level = (25, 25),
             noisy_target = false,
             maxval = 255,
             baseclo_type::String="supervised_denoise", baseclo_kws...)
-        new(select_closure(; closure_type=baseclo_type, baseclo_kws...), 
-            Float32.(noise_level ./ maxval), 
+        new(select_closure(; closure_type=baseclo_type, baseclo_kws...),
+            Float32.(noise_level ./ maxval),
             noisy_target)
     end
 end
 
 function Base.show(io::IO, clo::SyntheticAWGN)
-    print(io, 
+    print(io,
 """
 SyntheticAWGN(
     baseclo=$(clo.baseclo),

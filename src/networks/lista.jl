@@ -1,4 +1,4 @@
-struct LISTALayer{C, Ct, P} <: Lux.AbstractExplicitContainerLayer{(:analysis, :synthesis, :prox)}
+struct LISTALayer{C, Ct, P} <: Lux.AbstractLuxContainerLayer{(:analysis, :synthesis, :prox)}
     analysis::C
     synthesis::Ct
     prox::P
@@ -78,30 +78,29 @@ function project!(l::LISTALayer, ps, st::NamedTuple)
     project!(l.prox, ps.prox, st.prox)
 end
 
-function (l::LISTALayer)((z, π0, (ỹ, H))::Tuple{Tz, Tz, Tuple}, ps, st::NamedTuple) where {Tz}
-    σ = Zygote.@ignore H.noise_level
+# Shared implementation for the LISTA update step z_{k+1} = prox(z_k - A^T(ABz_k - y), sigma)
+function _lista_update(l::LISTALayer, z, ỹ, H, ps, st::NamedTuple)
+    σ = CRC.@ignore_derivatives H.noise_level
     Bz, st_s = l.synthesis(z, ps.synthesis, st.synthesis)
     Ar, st_a = l.analysis(gramian(H)(Bz) - ỹ, ps.analysis, st.analysis)
     znew, st_p = l.prox((z - Ar, σ), ps.prox, st.prox)
     return znew, merge(st, (analysis=st_a, synthesis=st_s, prox=st_p))
 end
 
-function (l::LISTALayer)((z, (ỹ, H))::Tuple{Tz, Tuple}, ps, st::NamedTuple) where {Tz}
-    σ = Zygote.@ignore H.noise_level
-    Bz, st_s = l.synthesis(z, ps.synthesis, st.synthesis)
-    Ar, st_a = l.analysis(gramian(H)(Bz) - ỹ, ps.analysis, st.analysis)
-    znew, st_p = l.prox((z - Ar, σ), ps.prox, st.prox)
-    return znew, merge(st, (analysis=st_a, synthesis=st_s, prox=st_p))
-end
+(l::LISTALayer)((z, π0, (ỹ, H))::Tuple{Tz, Tz, Tuple}, ps, st::NamedTuple) where {Tz} =
+    _lista_update(l, z, ỹ, H, ps, st)
+
+(l::LISTALayer)((z, (ỹ, H))::Tuple{Tz, Tuple}, ps, st::NamedTuple) where {Tz} =
+    _lista_update(l, z, ỹ, H, ps, st)
 
 function (l::LISTALayer)((ỹ, H)::Tuple{Ty, <:AbstractOperator}, ps, st::NamedTuple) where {Ty}
-    σ = Zygote.@ignore H.noise_level
+    σ = CRC.@ignore_derivatives H.noise_level
     Ar, st_a = l.analysis(ỹ, ps.analysis, st.analysis)
     z, st_p = l.prox((Ar, σ), ps.prox, st.prox)
     return z, merge(st, (analysis=st_a, prox=st_p))
 end
 
-struct LISTA{K, T} <: Lux.AbstractExplicitContainerLayer{(:layer,)}
+struct LISTA{K, T} <: Lux.AbstractLuxContainerLayer{(:layer,)}
     layer::T
     function LISTA(iters::Integer, args...; tol=1e-3, maxit=100, jacobian_free=false, kws...) 
         layer = LISTALayer(args...; kws...)

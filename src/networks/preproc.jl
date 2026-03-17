@@ -35,7 +35,6 @@ function preprocess(P::ImagePreprocess, y, H::AWGN)
     ỹ = H'(y)
     pad = calcpad(size(y,1), size(y,2), P.stride)
     yp = pad_reflect(ỹ, pad, dims=(1,2))
-    # Zygote.@ignore if P.resize_noise
     if P.resize_noise
         H.noise_level = upsample_bilinear(H.noise_level; size=(cld(size(yp, 1), P.stride), cld(size(yp, 2), P.stride)))
     end
@@ -56,7 +55,7 @@ function preprocess(P::KSpacePreprocess, y, H::AbstractOperator)
     x = H'(y)
     pad = calcpad(size(x,1), size(x,2), P.stride)
     xp = pad_reflect(x, pad, dims=(1,2))
-    Zygote.@ignore begin
+    CRC.@ignore_derivatives begin
         if size(H.mask, 2) == 1
             H.mask = upsample_nearest(H.mask, (size(xp,1)/size(x,1), 1.0))
         end
@@ -64,8 +63,8 @@ function preprocess(P::KSpacePreprocess, y, H::AbstractOperator)
             H.mask = upsample_nearest(H.mask, (1.0, size(xp,2)/size(x,2)))
         end
     end
-    Zygote.@ignore H.map = pad_reflect(H.map, pad, dims=(1,2))
-    Zygote.@ignore if P.resize_noise
+    CRC.@ignore_derivatives H.map = pad_reflect(H.map, pad, dims=(1,2))
+    CRC.@ignore_derivatives if P.resize_noise
         σ = H.noise_level
         σ = upsample_bilinear(σ; size=(cld(size(xp, 1), P.stride), cld(size(xp, 2), P.stride)))
         H.noise_level = σ

@@ -11,8 +11,9 @@ import MPI, NCCL
 using MLUtils
 using Functors
 
-using Optimisers, Zygote, ParameterSchedulers
+using Optimisers, ParameterSchedulers
 import ChainRulesCore as CRC
+using ADTypes: AutoZygote, AutoEnzyme, AutoReactant, AbstractADType
 using SSIMLoss
 using CirculantAttention
 using LazyGrids

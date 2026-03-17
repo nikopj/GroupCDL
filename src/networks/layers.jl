@@ -11,7 +11,7 @@ function ST(x::Tx, t::Tt)::Tx where {Tx, Tt}
     @. sign(x)*relu(abs(x + 1f-7) - t)
 end
 
-struct SoftThreshold{N, C, d} <: Lux.AbstractExplicitLayer
+struct SoftThreshold{N, C, d} <: Lux.AbstractLuxLayer
     init_weight
     function SoftThreshold(spatdims::Integer, chans::Integer; τ0=1e-2, degrees=0, T=Float32) 
         init_weight = () -> begin
@@ -37,7 +37,7 @@ function Base.show(io::IO, l::SoftThreshold{N,C,d}) where {N,C,d}
     print(io, "SoftThreshold(spatial_dims=$N, channels=$C, degrees=$d)")
 end
 
-struct Polynomial{N, C, d} <: LuxCore.AbstractExplicitLayer
+struct Polynomial{N, C, d} <: LuxCore.AbstractLuxLayer
     init_weight
     function Polynomial(spatdims::Integer, chans::Integer; τ0=1e-2, degrees=0, T=Float32) 
         init_weight = () -> begin

@@ -7,7 +7,7 @@ abstract type AbstractMRIRecoClosure <: AbstractClosure end
 function (clo::AbstractMRIRecoClosure)(::Val{true}, sample::Samples.ObservedKSpace, net, ps, st)
     ref = reference(sample)
     y = input(sample)
-    A = obs_operator(sample) 
+    A = obs_operator(sample)
     y_zf = A'(y)
 
     x̂, st = net((y, A), ps, st)
@@ -16,7 +16,7 @@ function (clo::AbstractMRIRecoClosure)(::Val{true}, sample::Samples.ObservedKSpa
     sense_mask = (sum(abs2, smaps; dims=3) .> 0)
     x̂ .*= sense_mask
 
-    mv = 1f0 
+    mv = 1f0
     mse  = mean(abs2, abs.(ref) - abs.(x̂))
     psnr = 20log10(mv) - 10log10(mse)
     ssim = SSIMLoss.ssim(abs.(ref), abs.(x̂); peakval=mv)
@@ -38,8 +38,8 @@ function (clo::AbstractMRIRecoClosure)(::Val{true}, sample::Samples.ObservedKSpa
 end
 
 metric_keys(::AbstractMRIRecoClosure) = (:psnr, :ssim, :mse, :maxval)
-function init_metrics(closure::AbstractMRIRecoClosure, N) 
-    Dict(:name=>Vector{String}(undef, N), 
+function init_metrics(closure::AbstractMRIRecoClosure, N)
+    Dict(:name=>Vector{String}(undef, N),
          :psnr=>Vector{Float32}(undef, N),
          :mse=>Vector{Float32}(undef, N),
          :maxval=>Vector{Float32}(undef, N),
@@ -49,7 +49,7 @@ end
 function log_outputs(::AbstractMRIRecoClosure, logger, outputs; logname=x->"val_image/$(basename(outputs[:name]))")
     imgs = clamp.(cat(outputs[:reference], outputs[:input], outputs[:output], 2outputs[:residual]; dims=4), 0, outputs[:maxval])
     imgs ./= outputs[:maxval]
-    mos = cat([mosaicview(imgs[:,:,i,:]; nrow=2, rowmajor=true, npad=10) for i=1:size(imgs, 3)]...; dims=3) 
+    mos = cat([mosaicview(imgs[:,:,i,:]; nrow=2, rowmajor=true, npad=10) for i=1:size(imgs, 3)]...; dims=3)
     log_image(logger, logname(outputs), mos, HWC)
 end
 
@@ -69,20 +69,15 @@ function Base.show(io::IO, clo::SupervisedMRIReco)
     print(io, "SupervisedMRIReco($(clo.loss))")
 end
 
-function (clo::SupervisedMRIReco)(::Val{false}, sample::Samples.ObservedKSpace, net, ps, st)
+# Lux.Training-compatible loss function: (model, ps, st, data) -> (loss, st, extras)
+function (clo::SupervisedMRIReco)(net, ps, st, sample::Samples.ObservedKSpace)
     x = reference(sample)
     y = input(sample)
-    A = obs_operator(sample) 
-
+    A = obs_operator(sample)
     smaps = A.map
     sense_mask = (sum(abs2, smaps; dims=3) .> 0)
-
-    lossval, grads = Zygote.withgradient(ps) do Θ
-        x̂, st = net((y, A), Θ, st)
-        clo.loss(x .* sense_mask, x̂ .* sense_mask)
-    end
-
-    return lossval, grads[1], st
+    x̂, st = net((y, A), ps, st)
+    return clo.loss(x .* sense_mask, x̂ .* sense_mask), st, (;)
 end
 
 #========================================
@@ -101,17 +96,17 @@ struct SyntheticMRIReco <: AbstractSyntheticClosure
     noise_level::Union{Vector, Tuple}
     noise_jitter::Float32
     max_corr::Float32
-    function SyntheticMRIReco(; 
+    function SyntheticMRIReco(;
             fixed_rng = false,
             rng_seed = 0,
-            baseclo_type="supervisedmrireco", 
-            accel=4, 
-            center_frac=0.08, 
-            mask_type=:random, 
-            readout_dir=:horizontal, 
-            noise_level=(0f0, 0f0), 
-            noise_jitter=0f0, 
-            max_corr=0f0, 
+            baseclo_type="supervisedmrireco",
+            accel=4,
+            center_frac=0.08,
+            mask_type=:random,
+            readout_dir=:horizontal,
+            noise_level=(0f0, 0f0),
+            noise_jitter=0f0,
+            max_corr=0f0,
             uniform_offset=missing,
             baseclo_kws...)
 
@@ -123,7 +118,7 @@ struct SyntheticMRIReco <: AbstractSyntheticClosure
             :h
         elseif readout_dir in (:vertical, "vertical", "v", :v)
             :v
-        else 
+        else
             throw(ErrorException("readout_dir $readout_dir not implemented."))
         end
 
@@ -134,12 +129,12 @@ struct SyntheticMRIReco <: AbstractSyntheticClosure
     end
 end
 
-function Base.show(io::IO, clo::SyntheticMRIReco) 
-    print(io, 
+function Base.show(io::IO, clo::SyntheticMRIReco)
+    print(io,
 """
 SyntheticMRIReco(baseclo=$(clo.baseclo), fixed_rng=$(clo.fixed_rng), rng_seed=$(clo.rng_seed),
                  mask=$(clo.mask_type), readout_dir=$(clo.readout_dir), offset=$(clo.uniform_offset),
-                 accel=$(clo.accel), center_frac=$(clo.center_frac), 
+                 accel=$(clo.accel), center_frac=$(clo.center_frac),
                  noise_level=$(clo.noise_level), noise_jitter=$(clo.noise_jitter), max_corr=$(clo.max_corr))
 """)
 end

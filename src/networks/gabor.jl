@@ -46,7 +46,7 @@ gaborkernel(a, f, ψ, ks::Int, is_complex::Val=Val(false), pos=0f0) = gaborkerne
 
 const ConvOrConvT = Union{Lux.Conv, Lux.ConvTranspose}
 
-struct GaborConvLayer{L <: ConvOrConvT, is_complex, use_position} <: Lux.AbstractExplicitLayer
+struct GaborConvLayer{L <: ConvOrConvT, is_complex, use_position} <: Lux.AbstractLuxLayer
     layer::L
     MoG::Int
 end

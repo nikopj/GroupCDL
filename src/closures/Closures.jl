@@ -8,7 +8,6 @@ using ..Samples
 using Random
 using CUDA
 using NNlib
-using Zygote
 using Statistics
 using SSIMLoss
 using MLUtils
@@ -21,8 +20,6 @@ export log_outputs, metric_keys, init_metrics, reduce_metrics
 
 abstract type AbstractClosure end
 
-(clo::AbstractClosure)(b::Bool, args...) = clo(Val(b), args...)
-
 metric_keys(::AbstractClosure) = missing
 init_metrics(::AbstractClosure) = missing
 log_outputs(::AbstractClosure, logger, outputs) = missing
@@ -34,7 +31,7 @@ function select_closure(; closure_type::String="syntheticawgn", kws...)
     t = replace(lowercase(closure_type), "_"=>"")
     clo = if t == "superviseddenoise"
         SupervisedDenoise(; kws...)
-    elseif t == "syntheticawgn" 
+    elseif t == "syntheticawgn"
         SyntheticAWGN(; kws...)
     elseif t == "supervisedmrireco"
         SupervisedMRIReco(; kws...)
@@ -102,4 +99,3 @@ function reduce_metrics(clo::AbstractClosure, metrics::Dict)
 end
 
 end;
-

@@ -9,37 +9,51 @@ using ArgParse
 using FileIO, BSON
 using Accessors
 using YAML, TensorBoardLogger, Logging
+using ADTypes: AutoZygote, AutoEnzyme, AutoReactant
 
 if LuxCUDA.functional()
     DistributedUtils.initialize(NCCLBackend)
-    backend = DistributedUtils.get_distributed_backend(NCCLBackend)
+    distr_backend = DistributedUtils.get_distributed_backend(NCCLBackend)
 else
     DistributedUtils.initialize(MPIBackend)
-    backend = DistributedUtils.get_distributed_backend(MPIBackend)
+    distr_backend = DistributedUtils.get_distributed_backend(MPIBackend)
 end
 
-const local_rank = DistributedUtils.local_rank(backend)
-const total_workers = DistributedUtils.total_workers(backend)
+const local_rank = DistributedUtils.local_rank(distr_backend)
+const total_workers = DistributedUtils.total_workers(distr_backend)
 is_distributed() = total_workers > 1
 should_log() = !is_distributed() || (local_rank == 0)
 
 CUDA.allowscalar(false)
 include("scripts/makeconfig.jl")
 
+function select_ad_backend(; ad_backend::String="zygote", kws...)
+    t = lowercase(strip(ad_backend))
+    if t == "zygote"
+        return AutoZygote()
+    elseif t == "enzyme"
+        return AutoEnzyme()
+    elseif t == "reactant"
+        return AutoReactant()
+    else
+        throw(ErrorException("ad_backend=\"$ad_backend\" not recognized. Choose: zygote, enzyme, reactant."))
+    end
+end
+
 function main(;
         config = missing,
-        network_config = "config/cdlnet.yaml", 
-        train_config = "config/train.yaml", 
+        network_config = "config/cdlnet.yaml",
+        train_config = "config/train.yaml",
         closure_config = "config/synthawgn_closure.yaml",
         data_config = "config/image_data.yaml",
         log_config = "config/log.yaml",
-        seed = rand(1:9999), 
-        device = gpu_device(), 
-        train = false, 
+        seed = rand(1:9999),
+        device = gpu_device(),
+        train = false,
         train_continue = false,
-        warmup = false, 
-        warmup_trn = true, 
-        warmup_val = true, 
+        warmup = false,
+        warmup_trn = true,
+        warmup_val = true,
         verbose = false,
         eval = false,
         eval_closure_config = missing,
@@ -51,10 +65,10 @@ function main(;
         worker_str = is_distributed() ? "[$(local_rank+1)/$(total_workers)]" : "",
         alt_ckpt_fn = missing,
     )
-    config = loadconfig(config; 
-                        network = network_config, 
-                        train = train_config, 
-                        closure = closure_config, 
+    config = loadconfig(config;
+                        network = network_config,
+                        train = train_config,
+                        closure = closure_config,
                         data = data_config,
                         log = log_config)
 
@@ -66,7 +80,7 @@ function main(;
     should_log() && verbose && (@info "Closure:"; display(clo))
 
     if get_loaders
-        loaders = select_loaders(; backend=backend, total_workers=total_workers, config[:data]...)
+        loaders = select_loaders(; backend=distr_backend, total_workers=total_workers, config[:data]...)
     else
         loaders = missing
     end
@@ -114,7 +128,7 @@ function main(;
         ckpt_epoch = ckpt[:epoch]
         verbose && println("Loading checkpoint $(ckptfn): epoch=$(ckpt[:epoch])")
         if train_continue
-            start_epoch = ckpt[:epoch] 
+            start_epoch = ckpt[:epoch]
         end
     else
         verbose && @info("Setting up network $worker_str...")
@@ -132,8 +146,8 @@ function main(;
     end
 
     if is_distributed()
-        ps = DistributedUtils.synchronize!!(backend, ps)
-        st = DistributedUtils.synchronize!!(backend, st)
+        ps = DistributedUtils.synchronize!!(distr_backend, ps)
+        st = DistributedUtils.synchronize!!(distr_backend, st)
     end
 
     if :share in keys(config)
@@ -142,7 +156,7 @@ function main(;
 
             K = GroupCDL.iters(network)
             fl = Lux.parameterlength(network.dict)
-            num_params = (K * 2 * fl +       # AB 
+            num_params = (K * 2 * fl +       # AB
                           fl +               # D
                           Lux.parameterlength(network.lista.layer.prox.nlss) +   # θϕρ
                           2 * Lux.parameterlength(network.lista.layer.prox.Wα) + # αβ
@@ -153,13 +167,16 @@ function main(;
         end
     end
 
+    # AD backend selection from train config (default: zygote)
+    ad_backend = select_ad_backend(get(config[:train], :ad_backend, "zygote"))
+
     if warmup
-        if warmup_trn 
+        if warmup_trn
             verbose && @info "Starting train warmup $(worker_str)..."
             CUDA.@time sample = first(loaders.train) |> device
-            CUDA.@time trn_warmup = clo(Val(false), sample, network, ps, st)
-            _, _, st = trn_warmup
+            CUDA.@time loss, st, _ = clo(network, ps, st, sample)
             verbose && should_log() && println("done.")
+            trn_warmup = (loss, st)
         else
             trn_warmup = missing
         end
@@ -186,7 +203,7 @@ function main(;
             saveyaml(joinpath(logger.logdir, "config.yaml"), config)
             verbose && @info "Saving config file to \"$(config[:log][:logdir])\""
 
-            with_logger(logger) do 
+            with_logger(logger) do
                 @info "config" network=config[:network] train=config[:train] closure=config[:closure] data=config[:data] log=config[:log]
             end
             logdir = logger.logdir
@@ -195,15 +212,16 @@ function main(;
             logdir = logdir0
         end
 
-        ps, st = train!(clo, loaders, network, ps, st; 
+        ps, st = train!(clo, loaders, network, ps, st;
+                        backend = ad_backend,
+                        distr_backend = distr_backend,
                         rng = rng,
-                        device = device, 
-                        logger = logger, 
+                        device = device,
+                        logger = logger,
                         logdir = logdir,
                         start  = start_epoch,
                         backtrack_count = backtrack_count,
                         bestloss = bestloss,
-                        backend = backend,
                         should_log = should_log,
                         is_distributed = is_distributed,
                         local_rank = local_rank,
@@ -244,13 +262,13 @@ function main(;
         red_metrics = missing
     end
 
-    return network, ps, st, (loaders=loaders, 
-                             config=config, 
-                             closure=clo, 
-                             eval_closure=eval_clo, 
-                             reduced_metrics=red_metrics, 
-                             metrics=metrics, 
-                             warmup=out_warmup, 
+    return network, ps, st, (loaders=loaders,
+                             config=config,
+                             closure=clo,
+                             eval_closure=eval_clo,
+                             reduced_metrics=red_metrics,
+                             metrics=metrics,
+                             warmup=out_warmup,
                              epoch=ckpt_epoch)
 end
 
